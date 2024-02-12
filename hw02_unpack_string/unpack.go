@@ -16,7 +16,7 @@ func appendToStrBuilder(strBuild *strings.Builder, char rune, count int) {
 }
 
 func unpackOneCicle(strBuild *strings.Builder, runeSlice []rune, i int, c rune) bool {
-	if isNumber(c) { // nolint:nestif
+	if isNumber(c) { //nolint:nestif
 		if i > 0 {
 			if isNumber(runeSlice[i-1]) {
 				return false
