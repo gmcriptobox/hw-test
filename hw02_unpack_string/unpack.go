@@ -8,28 +8,31 @@ import (
 var ErrInvalidString = errors.New("invalid string")
 
 var isNumber = func(c rune) bool { return c >= '0' && c <= '9' }
+var isSlash = func(c rune) bool { return c == '\\' }
+var isChar = func(c rune) bool { return !isNumber(c) && !isSlash(c) }
 
-func appendToStrBuilder(strBuild *strings.Builder, char rune, count int) {
+func appendToStrBuilder(strBuild *strings.Builder, c rune, count int) {
 	for i := 0; i < count; i++ {
-		strBuild.WriteRune(char)
+		strBuild.WriteRune(c)
 	}
 }
 
-func unpackOneCicle(strBuild *strings.Builder, runeSlice []rune, i int, c rune) bool {
-	if isNumber(c) { //nolint:nestif
-		if i > 0 {
-			if isNumber(runeSlice[i-1]) {
-				return false
-			}
-			appendToStrBuilder(strBuild, runeSlice[i-1], int(c-'0'))
+func slashHandle(i int, runeSlice []rune, strBuild *strings.Builder) int {
+	c1 := runeSlice[i+1]
+	firdIndex := i + 2
+	if firdIndex < len(runeSlice) {
+		if isNumber(runeSlice[firdIndex]) {
+			appendToStrBuilder(strBuild, c1, int((runeSlice[firdIndex] - '0')))
+			i += 2
 		} else {
-			// крайний случай, если первым символом идет цифра
-			return false
+			strBuild.WriteRune(c1)
+			i++
 		}
-	} else if i > 0 && !isNumber(runeSlice[i-1]) {
-		strBuild.WriteRune(runeSlice[i-1])
+	} else {
+		strBuild.WriteRune(c1)
+		i++
 	}
-	return true
+	return i
 }
 
 func Unpack(str string) (string, error) {
@@ -37,23 +40,31 @@ func Unpack(str string) (string, error) {
 	if len(str) == 0 {
 		return "", nil
 	}
-	builder := strings.Builder{}
 	runeSlice := []rune(str)
-	// идем по слайсу символов, при встрече числа добавляем n раз предыдущий символ
-	for i, c := range runeSlice {
-		if !unpackOneCicle(&builder, runeSlice, i, c) {
+	lenSlice := len(runeSlice)
+	//проверка крайних случаев, одиночный слэш и число 1 символом
+	if lenSlice == 1 && isSlash(runeSlice[0]) || isNumber(runeSlice[0]) {
+		return "", ErrInvalidString
+	}
+	builder := strings.Builder{}
+	for i := 0; i < lenSlice-1; i++ {
+		c := runeSlice[i]
+		c1 := runeSlice[i+1]
+		if isNumber(c) || isSlash(c) && isChar(c1) {
 			return "", ErrInvalidString
+		} else if isSlash(c) && !isChar(c1) {
+			i = slashHandle(i, runeSlice, &builder)
+		} else if isChar(c) {
+			if isNumber(c1) {
+				appendToStrBuilder(&builder, c, int(c1-'0'))
+				i++
+			} else {
+				builder.WriteRune(c)
+			}
 		}
 	}
-	lenSlice := len(runeSlice)
 	if !isNumber(runeSlice[lenSlice-1]) {
-		// добавляем последний символ, если там не цифра
 		builder.WriteRune(runeSlice[lenSlice-1])
-	} else if lenSlice > 2 {
-		// проверка крайнего случая, когда последний и предпоследний символ цифры
-		if isNumber(runeSlice[lenSlice-2]) {
-			return "", ErrInvalidString
-		}
 	}
 	return builder.String(), nil
 }
