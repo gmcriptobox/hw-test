@@ -42,7 +42,7 @@ func Unpack(str string) (string, error) {
 	}
 	runeSlice := []rune(str)
 	lenSlice := len(runeSlice)
-	//проверка крайних случаев, одиночный слэш и число 1 символом
+	// проверка крайних случаев, одиночный слэш и число 1 символом
 	if lenSlice == 1 && isSlash(runeSlice[0]) || isNumber(runeSlice[0]) {
 		return "", ErrInvalidString
 	}
