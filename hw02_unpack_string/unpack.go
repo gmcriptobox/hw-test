@@ -7,7 +7,7 @@ import (
 
 var ErrInvalidString = errors.New("invalid string")
 
-var isNumber = func(c rune) bool { return c >= '0' && c <= '9' }
+var isNumber = func(c rune) bool { return c >= '0' && c <= '9' } //nolint:gofumpt
 var isSlash = func(c rune) bool { return c == '\\' }
 var isChar = func(c rune) bool { return !isNumber(c) && !isSlash(c) }
 
@@ -50,11 +50,11 @@ func Unpack(str string) (string, error) {
 	for i := 0; i < lenSlice-1; i++ {
 		c := runeSlice[i]
 		c1 := runeSlice[i+1]
-		if isNumber(c) || isSlash(c) && isChar(c1) {
+		if isNumber(c) || isSlash(c) && isChar(c1) { //nolint:gocritic
 			return "", ErrInvalidString
 		} else if isSlash(c) && !isChar(c1) {
 			i = slashHandle(i, runeSlice, &builder)
-		} else if isChar(c) {
+		} else {
 			if isNumber(c1) {
 				appendToStrBuilder(&builder, c, int(c1-'0'))
 				i++
