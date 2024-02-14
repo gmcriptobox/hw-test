@@ -32,10 +32,8 @@ func Top10(str string) []string {
 		}
 	}
 	pairs := make([]pair, 0, len(words))
-	i := 0
 	for key, value := range countMap {
-		pairs[i] = pair{key, value}
-		i++
+		pairs = append(pairs, pair{key, value})
 	}
 	sort.Slice(pairs, func(i, j int) bool {
 		if pairs[i].value == pairs[j].value {
