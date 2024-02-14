@@ -31,9 +31,11 @@ func Top10(str string) []string {
 			countMap[string(runeWord[left:len(runeWord)-right])]++
 		}
 	}
-	var pairs []pair
+	pairs := make([]pair, 0, len(words))
+	i := 0
 	for key, value := range countMap {
-		pairs = append(pairs, pair{key, value})
+		pairs[i] = pair{key, value}
+		i++
 	}
 	sort.Slice(pairs, func(i, j int) bool {
 		if pairs[i].value == pairs[j].value {
