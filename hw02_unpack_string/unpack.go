@@ -47,7 +47,8 @@ func Unpack(str string) (string, error) {
 		return "", ErrInvalidString
 	}
 	builder := strings.Builder{}
-	for i := 0; i < lenSlice-1; i++ {
+	i := 0
+	for ; i < lenSlice-1; i++ {
 		c := runeSlice[i]
 		c1 := runeSlice[i+1]
 		if isNumber(c) || isSlash(c) && isChar(c1) { //nolint:gocritic
@@ -63,8 +64,12 @@ func Unpack(str string) (string, error) {
 			}
 		}
 	}
-	if !isNumber(runeSlice[lenSlice-1]) {
-		builder.WriteRune(runeSlice[lenSlice-1])
+	c := runeSlice[lenSlice-1]
+	if isChar(c) {
+		builder.WriteRune(c)
+	}
+	if i != lenSlice && isSlash(c) {
+		return "", ErrInvalidString
 	}
 	return builder.String(), nil
 }
