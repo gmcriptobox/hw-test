@@ -2,11 +2,74 @@ package hw02unpackstring
 
 import (
 	"errors"
+	"strings"
 )
 
 var ErrInvalidString = errors.New("invalid string")
 
-func Unpack(_ string) (string, error) {
-	// Place your code here.
-	return "", nil
+var isNumber = func(c rune) bool { return c >= '0' && c <= '9' } //nolint:gofumpt
+var isSlash = func(c rune) bool { return c == '\\' }
+var isChar = func(c rune) bool { return !isNumber(c) && !isSlash(c) }
+
+func appendToStrBuilder(strBuild *strings.Builder, c rune, count int) {
+	for i := 0; i < count; i++ {
+		strBuild.WriteRune(c)
+	}
+}
+
+func slashHandle(i int, runeSlice []rune, strBuild *strings.Builder) int {
+	c1 := runeSlice[i+1]
+	firdIndex := i + 2
+	if firdIndex < len(runeSlice) {
+		if isNumber(runeSlice[firdIndex]) {
+			appendToStrBuilder(strBuild, c1, int((runeSlice[firdIndex] - '0')))
+			i += 2
+		} else {
+			strBuild.WriteRune(c1)
+			i++
+		}
+	} else {
+		strBuild.WriteRune(c1)
+		i++
+	}
+	return i
+}
+
+func Unpack(str string) (string, error) {
+	// проверка крайнего случая, когда строка пуста
+	if len(str) == 0 {
+		return "", nil
+	}
+	runeSlice := []rune(str)
+	lenSlice := len(runeSlice)
+	// проверка крайних случаев, одиночный слэш и число 1 символом
+	if lenSlice == 1 && isSlash(runeSlice[0]) || isNumber(runeSlice[0]) {
+		return "", ErrInvalidString
+	}
+	builder := strings.Builder{}
+	i := 0
+	for ; i < lenSlice-1; i++ {
+		c := runeSlice[i]
+		c1 := runeSlice[i+1]
+		if isNumber(c) || isSlash(c) && isChar(c1) { //nolint:gocritic
+			return "", ErrInvalidString
+		} else if isSlash(c) && !isChar(c1) {
+			i = slashHandle(i, runeSlice, &builder)
+		} else {
+			if isNumber(c1) {
+				appendToStrBuilder(&builder, c, int(c1-'0'))
+				i++
+			} else {
+				builder.WriteRune(c)
+			}
+		}
+	}
+	c := runeSlice[lenSlice-1]
+	if isChar(c) {
+		builder.WriteRune(c)
+	}
+	if i != lenSlice && isSlash(c) {
+		return "", ErrInvalidString
+	}
+	return builder.String(), nil
 }
