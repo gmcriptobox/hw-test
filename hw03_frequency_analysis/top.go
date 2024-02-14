@@ -38,9 +38,8 @@ func Top10(str string) []string {
 	sort.Slice(pairs, func(i, j int) bool {
 		if pairs[i].value == pairs[j].value {
 			return pairs[i].key < pairs[j].key
-		} else {
-			return pairs[i].value > pairs[j].value
 		}
+		return pairs[i].value > pairs[j].value
 	})
 	var result = make([]string, 10)
 	for i := range result {
