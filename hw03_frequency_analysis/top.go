@@ -41,12 +41,12 @@ func Top10(str string) []string {
 		}
 		return pairs[i].value > pairs[j].value
 	})
-	var result = make([]string, 10)
-	for i := range result {
-		if i >= len(pairs) {
+	result := make([]string, 10)
+	for i, p := range pairs {
+		if i > 9 {
 			break
 		}
-		result[i] = pairs[i].key
+		result[i] = p.key
 	}
 	return result
 }

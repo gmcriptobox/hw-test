@@ -38,6 +38,7 @@ linters:
     - gocyclo
     - godot
     - gofmt
+    - gofumpt
     - goheader
     - goprintffuncname
     - gosec
