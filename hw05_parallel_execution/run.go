@@ -2,76 +2,80 @@ package hw05parallelexecution
 
 import (
 	"errors"
-	"sync/atomic"
+	"sync"
 )
 
 var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 
 type Task func() error
 
-var (
-	countError  int64
-	taskCounter int64
-)
-
-var (
-	isErrorChan   = make(chan bool)
-	isAllTaskDone = make(chan bool)
-	doneTaskChan  = make(chan bool)
-)
-
-func runTask(t Task) {
+func runTask(t Task, errorChan chan<- struct{}, successChan chan<- struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
 	err := t()
 	if err != nil {
-		atomic.AddInt64(&countError, 1)
+		errorChan <- struct{}{}
+	} else {
+		successChan <- struct{}{}
 	}
-	doneTaskChan <- true
-	atomic.AddInt64(&taskCounter, -1)
 }
 
-func taskDoneChecker(taskSize int) {
-	doneTaskCount := 0
+func startTask(t Task, wg *sync.WaitGroup, errorChan chan<- struct{}, successChan chan<- struct{}, nbTask *int) {
+	wg.Add(1)
+	go runTask(t, errorChan, successChan, wg)
+	*nbTask++
+}
+
+func taskLimiter(tasks []Task, done chan<- error, wg *sync.WaitGroup, maxErrorCount int, maxGoCount int) {
+	errorChan := make(chan struct{}, maxGoCount*2)
+	successChan := make(chan struct{}, maxGoCount*2)
+	var wgTasks sync.WaitGroup
+	defer func() {
+		wgTasks.Wait()
+		close(errorChan)
+		close(successChan)
+		wg.Done()
+	}()
+	nbTask := 0
+	succesCount := 0
+	errorCount := 0
+	taskSize := len(tasks)
+	for i := 0; i < maxGoCount && i < taskSize; i++ {
+		startTask(tasks[nbTask], &wgTasks, errorChan, successChan, &nbTask)
+	}
 	for {
-		<-doneTaskChan
-		doneTaskCount++
-		if doneTaskCount == taskSize {
-			isAllTaskDone <- true
+		select {
+		case <-errorChan:
+			errorCount++
+		case <-successChan:
+			succesCount++
+		}
+
+		if errorCount == maxErrorCount {
+			done <- ErrErrorsLimitExceeded
 			return
 		}
-	}
-}
 
-func checkErrorCount(m int64) bool {
-	for {
-		if atomic.LoadInt64(&countError) >= m {
-			isErrorChan <- true
+		if succesCount+errorCount == taskSize {
+			done <- nil
+			return
 		}
-	}
-}
 
-func taskLimiter(tasks []Task, n int64, taskSize int) {
-	nbTask := 0
-	for {
-		if atomic.LoadInt64(&taskCounter) < n {
-			atomic.StoreInt64(&taskCounter, 1)
-			if nbTask == taskSize-1 {
-				return
-			}
-			go runTask(tasks[nbTask])
-			nbTask++
+		if nbTask < taskSize {
+			startTask(tasks[nbTask], &wgTasks, errorChan, successChan, &nbTask)
 		}
 	}
 }
 
 // Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
 func Run(tasks []Task, n, m int) error {
-	go taskDoneChecker(len(tasks))
-	go checkErrorCount(int64(m))
-	go taskLimiter(tasks, int64(n), len(tasks))
-	select {
-	case <-isErrorChan:
-		return ErrErrorsLimitExceeded
-	case <-isAllTaskDone:
-		return nil
-	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	resultChan := make(chan error)
+	defer func() {
+		close(resultChan)
+	}()
+	go taskLimiter(tasks, resultChan, &wg, m, n)
+	x := <-resultChan
+	wg.Wait()
+	return x
 }
