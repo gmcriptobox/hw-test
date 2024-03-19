@@ -1,9 +1,5 @@
 package hw06pipelineexecution
 
-import (
-	"fmt"
-)
-
 type (
 	In  = <-chan interface{}
 	Out = In
@@ -13,10 +9,9 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	outSlise := make([]Out, 0, len(stages))
-	outSliseFlag := make([]bool, 0, len(stages))
-	result := make(Bi, len(stages)+1)
-	defer close(result)
+	outSlise := make([]Out, 0)
+	outSliseFlag := make([]bool, 0)
+	resultSlice := make([]interface{}, 0)
 	for task := range in {
 		out := make(Bi, 1)
 		out <- task
@@ -26,7 +21,10 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 		}
 		outSlise = append(outSlise, in)
 		outSliseFlag = append(outSliseFlag, false)
+		resultSlice = append(resultSlice, nil)
 	}
+	result := make(Bi, len(resultSlice))
+	defer close(result)
 	for {
 		select {
 		case _, ok := <-done:
@@ -39,8 +37,7 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 			select {
 			case x := <-outSlise[i]:
 				outSliseFlag[i] = true
-				result <- x
-				fmt.Println(x)
+				resultSlice[i] = x
 			default:
 			}
 		}
@@ -51,6 +48,9 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 		if quit {
 			break
 		}
+	}
+	for _, v := range resultSlice {
+		result <- v
 	}
 	return result
 }
