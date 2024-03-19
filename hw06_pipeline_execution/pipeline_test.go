@@ -38,7 +38,7 @@ func TestPipeline(t *testing.T) {
 
 	t.Run("simple case", func(t *testing.T) {
 		in := make(Bi)
-		data := []int{1, 2, 3, 4, 5}
+		data := []int{1, 2, 3, 4, 5, 6}
 
 		go func() {
 			for _, v := range data {
@@ -47,14 +47,14 @@ func TestPipeline(t *testing.T) {
 			close(in)
 		}()
 
-		result := make([]string, 0, 10)
+		result := make([]string, 0, 12)
 		start := time.Now()
 		for s := range ExecutePipeline(in, nil, stages...) {
 			result = append(result, s.(string))
 		}
 		elapsed := time.Since(start)
 
-		require.Equal(t, []string{"102", "104", "106", "108", "110"}, result)
+		require.Equal(t, []string{"102", "104", "106", "108", "110", "112"}, result)
 		require.Less(t,
 			int64(elapsed),
 			// ~0.8s for processing 5 values in 4 stages (100ms every) concurrently
