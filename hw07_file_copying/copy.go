@@ -55,7 +55,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	data := make([]byte, 64)
 	var count int64
 	maxWriteLimit := limit
-	if limit > fi.Size() {
+	if limit > fi.Size() || limit == 0{
 		maxWriteLimit = fi.Size()
 	}
 	maxWriteLimit -= offset
