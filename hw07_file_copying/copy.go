@@ -51,14 +51,13 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		return ErrOffsetExceedsFileSize
 	}
 
-	fileRead.Seek(offset, 0)
+	fileRead.Seek(offset, io.SeekStart)
 	data := make([]byte, 64)
 	var count int64
-	maxWriteLimit := limit + 1
+	maxWriteLimit := limit
 	if maxWriteLimit > fi.Size() || limit == 0 {
 		maxWriteLimit = fi.Size()
 	}
-	maxWriteLimit -= offset
 	bar := pb.Start64(maxWriteLimit)
 	for {
 		n, err := fileRead.Read(data)
