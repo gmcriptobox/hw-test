@@ -61,7 +61,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	bar := pb.Start64(maxWriteLimit)
 	for {
 		n, err := fileRead.Read(data)
-		if count+int64(n) < maxWriteLimit {
+		if count+int64(n) <= maxWriteLimit {
 			count += int64(n)
 			file.Write(data[:n])
 			bar.Add(n)
